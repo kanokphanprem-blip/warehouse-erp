@@ -63,8 +63,8 @@ export default function StockOutPage() {
 
     const qty = Number(form.quantity)
 
-    // 1. Record the stock transaction
-    const { error: txError } = await supabase.from('stock_transactions').insert([{
+    // 1. Record the stock transaction — use .select() to get the inserted ID
+    const { data: txData, error: txError } = await supabase.from('stock_transactions').insert([{
       product_id: form.product_id,
       type: 'out',
       quantity: qty,
@@ -73,16 +73,17 @@ export default function StockOutPage() {
       installation_date: form.installation_date,
       location: form.location.trim(),
       assigned_to: form.assigned_to.trim(),
-    }])
+    }]).select()
 
     if (txError) { setError(txError.message); setSubmitting(false); return }
+    const txId = (txData as StockTransaction[] | null)?.[0]?.id ?? ''
 
     // 2. Create one UnitSold record per unit — insert returns the rows with their IDs
     const unitRows = Array.from({ length: qty }, (_, i) => ({
       product_id: form.product_id,
       product_name: selectedProduct!.name,
       sku: selectedProduct!.sku,
-      transaction_id: '',          // filled in below after we get the tx id
+      transaction_id: txId,
       unit_number: i + 1,
       total_units: qty,
       reference: form.reference.trim(),

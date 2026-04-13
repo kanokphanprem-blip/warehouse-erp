@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { supabase, Product, UnitSold } from '@/lib/supabase'
+import { supabase, Product, StockTransaction, UnitSold } from '@/lib/supabase'
 import QRStickers, { StickerData } from '@/components/QRStickers'
 import WarrantyCards, { WarrantyCardData } from '@/components/WarrantyCards'
 
@@ -96,8 +96,31 @@ export default function UnitsSoldPage() {
   }
 
   async function deleteUnit(id: string) {
-    if (!confirm('Delete this unit record?')) return
+    if (!confirm('Delete this unit? If it was the last unit from its stock-out transaction, that transaction will also be removed and stock restored.')) return
+
+    const unit = units.find((u) => u.id === id)
+
+    // Delete the unit first
     await supabase.from('units_sold').delete().eq('id', id)
+
+    // If linked to a transaction, check if any siblings remain
+    if (unit?.transaction_id) {
+      const siblings = units.filter((u) => u.id !== id && u.transaction_id === unit.transaction_id)
+      if (siblings.length === 0) {
+        // Last unit — delete the transaction and reverse stock
+        const { data: txData } = await supabase.from('stock_transactions').select('*').eq('id', unit.transaction_id)
+        const tx = (txData as StockTransaction[] | null)?.[0]
+        if (tx) {
+          const { data: prods } = await supabase.from('products').select('*').eq('id', tx.product_id)
+          const p = (prods as Product[] | null)?.[0]
+          if (p) {
+            await supabase.from('products').update({ current_stock: p.current_stock + tx.quantity }).eq('id', tx.product_id)
+          }
+          await supabase.from('stock_transactions').delete().eq('id', tx.id)
+        }
+      }
+    }
+
     fetchData()
   }
 

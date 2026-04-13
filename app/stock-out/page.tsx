@@ -19,12 +19,15 @@ export default function StockOutPage() {
     installation_date: '',
     location: '',
     assigned_to: '',
+    customer_name: '',
     warranty_months: 12,
+    warranty_preset: '12',
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [stickers, setStickers] = useState<StickerData[] | null>(null)
   const [warrantyCards, setWarrantyCards] = useState<WarrantyCardData[] | null>(null)
+  const [editTx, setEditTx] = useState<StockTransaction | null>(null)
 
   async function fetchData() {
     const [productsRes, txRes] = await Promise.all([
@@ -86,6 +89,7 @@ export default function StockOutPage() {
       installation_date: form.installation_date,
       location: form.location.trim(),
       assigned_to: form.assigned_to.trim(),
+      customer_name: form.customer_name.trim(),
       notes: form.notes.trim(),
       warranty_months: Number(form.warranty_months),
       status: 'active',
@@ -113,6 +117,7 @@ export default function StockOutPage() {
       installationDate: u.installation_date,
       location: u.location,
       assignedTo: u.assigned_to,
+      customerName: u.customer_name,
       notes: u.notes,
       issuedAt: u.created_at,
       qrUrl: `${origin}/units/${u.id}`,
@@ -128,16 +133,29 @@ export default function StockOutPage() {
       issuedAt: u.created_at,
       location: u.location,
       assignedTo: u.assigned_to,
+      customerName: u.customer_name,
       reference: u.reference,
       qrUrl: `${origin}/units/${u.id}`,
     }))
 
     setStickers(generated)
     setWarrantyCards(generatedWarranty)
-    setForm({ product_id: '', quantity: 1, reference: '', notes: '', installation_date: '', location: '', assigned_to: '', warranty_months: 12 })
+    setForm({ product_id: '', quantity: 1, reference: '', notes: '', installation_date: '', location: '', assigned_to: '', customer_name: '', warranty_months: 12, warranty_preset: '12' })
     setSelectedProduct(null)
     fetchData()
     setSubmitting(false)
+  }
+
+  async function handleDeleteTx(tx: StockTransaction) {
+    if (!confirm('Delete this transaction? Stock will be adjusted accordingly.')) return
+    // Reverse the stock effect (stock-out removed stock, so add it back)
+    const { data: prods } = await supabase.from('products').select('*').eq('id', tx.product_id)
+    const p = (prods as Product[] | null)?.[0]
+    if (p) {
+      await supabase.from('products').update({ current_stock: p.current_stock + tx.quantity }).eq('id', tx.product_id)
+    }
+    await supabase.from('stock_transactions').delete().eq('id', tx.id)
+    fetchData()
   }
 
   return (
@@ -221,9 +239,35 @@ export default function StockOutPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Warranty (months)</label>
-                  <input type="number" min={0} value={form.warranty_months}
-                    onChange={(e) => setForm({ ...form, warranty_months: Number(e.target.value) })}
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Warranty Period</label>
+                  <select
+                    value={form.warranty_preset}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setForm({ ...form, warranty_preset: v, ...(v !== 'custom' ? { warranty_months: Number(v) } : {}) })
+                    }}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  >
+                    <option value="0">No warranty</option>
+                    <option value="3">3 months</option>
+                    <option value="6">6 months</option>
+                    <option value="12">1 year (12 months)</option>
+                    <option value="24">2 years (24 months)</option>
+                    <option value="36">3 years (36 months)</option>
+                    <option value="custom">Custom…</option>
+                  </select>
+                  {form.warranty_preset === 'custom' && (
+                    <input type="number" min={0} placeholder="Enter months"
+                      value={form.warranty_months}
+                      onChange={(e) => setForm({ ...form, warranty_months: Number(e.target.value) })}
+                      className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name</label>
+                  <input type="text" value={form.customer_name} placeholder="e.g. Acme Corp / John Smith"
+                    onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -282,7 +326,19 @@ export default function StockOutPage() {
                       <p className="text-sm font-medium text-gray-800 truncate">{tx.products?.name}</p>
                       <p className="text-xs text-gray-400 font-mono">{tx.products?.sku}</p>
                     </div>
-                    <span className="text-sm font-bold text-red-500 shrink-0">-{tx.quantity}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm font-bold text-red-500">-{tx.quantity}</span>
+                      <button onClick={() => setEditTx(tx)} className="text-gray-400 hover:text-blue-600 transition-colors" title="Edit">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button onClick={() => handleDeleteTx(tx)} className="text-gray-400 hover:text-red-500 transition-colors" title="Delete">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5">
                     {tx.reference && <Detail icon="📋" text={tx.reference} />}
@@ -300,10 +356,154 @@ export default function StockOutPage() {
 
       {stickers && <QRStickers stickers={stickers} onClose={() => setStickers(null)} />}
       {warrantyCards && <WarrantyCards cards={warrantyCards} onClose={() => setWarrantyCards(null)} />}
+      {editTx && (
+        <EditStockOutModal
+          tx={editTx}
+          onClose={() => setEditTx(null)}
+          onSaved={() => { setEditTx(null); fetchData() }}
+        />
+      )}
     </div>
   )
 }
 
 function Detail({ icon, text }: { icon: string; text: string }) {
   return <span className="text-xs text-gray-500">{icon} {text}</span>
+}
+
+// ── Edit Stock Out Modal ──────────────────────────────────────────────────────
+
+function EditStockOutModal({
+  tx,
+  onClose,
+  onSaved,
+}: {
+  tx: StockTransaction
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const [form, setForm] = useState({
+    quantity: tx.quantity,
+    reference: tx.reference ?? '',
+    notes: tx.notes ?? '',
+    installation_date: tx.installation_date ?? '',
+    location: tx.location ?? '',
+    assigned_to: tx.assigned_to ?? '',
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setError('')
+
+    const newQty = Number(form.quantity)
+    const diff = newQty - tx.quantity
+
+    // Adjust product stock: stock-out reduces stock, so diff is inverted
+    if (diff !== 0) {
+      const { data: prods } = await supabase.from('products').select('*').eq('id', tx.product_id)
+      const p = (prods as Product[] | null)?.[0]
+      if (p) {
+        await supabase.from('products').update({ current_stock: p.current_stock - diff }).eq('id', tx.product_id)
+      }
+    }
+
+    const { error: err } = await supabase.from('stock_transactions').update({
+      quantity: newQty,
+      reference: form.reference.trim(),
+      notes: form.notes.trim(),
+      installation_date: form.installation_date,
+      location: form.location.trim(),
+      assigned_to: form.assigned_to.trim(),
+    }).eq('id', tx.id)
+
+    if (err) { setError(err.message); setSubmitting(false); return }
+    onSaved()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm my-4">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="font-semibold text-gray-900">Edit Stock Out</h2>
+            <p className="text-xs text-gray-400 mt-0.5 font-mono">{tx.serial_no}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
+          <div className="bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600">
+            <span className="font-medium">{tx.products?.name}</span>
+            <span className="text-gray-400 font-mono text-xs ml-2">{tx.products?.sku}</span>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Quantity *</label>
+            <input required type="number" min={1} value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {form.quantity !== tx.quantity && (
+              <p className="text-xs text-amber-600 mt-1">
+                Stock will {form.quantity < tx.quantity ? 'increase' : 'decrease'} by {Math.abs(form.quantity - tx.quantity)}
+              </p>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Installation Date</label>
+              <input type="date" value={form.installation_date}
+                onChange={(e) => setForm({ ...form, installation_date: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Reference</label>
+              <input type="text" value={form.reference} placeholder="e.g. ORD-001"
+                onChange={(e) => setForm({ ...form, reference: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Location / Site</label>
+            <input type="text" value={form.location} placeholder="e.g. Building A"
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Assigned To</label>
+            <input type="text" value={form.assigned_to} placeholder="e.g. John Smith"
+              onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <textarea value={form.notes} rows={2} placeholder="Optional notes..."
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >Cancel</button>
+            <button type="submit" disabled={submitting}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {submitting ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
 }

@@ -10,6 +10,7 @@ export type WarrantyCardData = {
   warrantyMonths: number
   installationDate: string  // YYYY-MM-DD or empty
   issuedAt: string          // ISO timestamp (used as fallback start)
+  customerName: string
   location: string
   assignedTo: string
   reference: string
@@ -73,9 +74,10 @@ function WarrantyCard({ d }: { d: WarrantyCardData }) {
 
       {/* Details */}
       <div className="px-5 py-3 space-y-1.5 border-b border-gray-100 text-xs">
-        {d.location   && <CardRow label="Location"   value={d.location} />}
-        {d.assignedTo && <CardRow label="Assigned To" value={d.assignedTo} />}
-        {d.reference  && <CardRow label="Reference"  value={d.reference} />}
+        {d.customerName && <CardRow label="Customer"   value={d.customerName} />}
+        {d.location     && <CardRow label="Location"   value={d.location} />}
+        {d.assignedTo   && <CardRow label="Assigned To" value={d.assignedTo} />}
+        {d.reference    && <CardRow label="Reference"  value={d.reference} />}
       </div>
 
       {/* Footer: QR + signature */}

@@ -55,6 +55,7 @@ create table if not exists units_sold (
   installation_date text default '',
   location          text default '',
   assigned_to       text default '',
+  customer_name     text default '',
   notes             text default '',
   warranty_months   integer not null default 12,
   status            text check (status in ('active','returned','maintenance')) default 'active',

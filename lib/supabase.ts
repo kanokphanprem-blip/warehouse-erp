@@ -47,6 +47,7 @@ export type UnitSold = {
   installation_date: string
   location: string
   assigned_to: string
+  customer_name: string
   notes: string
   warranty_months: number
   status: 'active' | 'returned' | 'maintenance'

@@ -105,6 +105,13 @@ export default function UnitDetailPage() {
               value={unit.location}
             />
           )}
+          {unit.customer_name && (
+            <DetailRow
+              icon={<PersonIcon />}
+              label="Customer"
+              value={unit.customer_name}
+            />
+          )}
           {unit.assigned_to && (
             <DetailRow
               icon={<PersonIcon />}

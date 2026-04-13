@@ -13,6 +13,7 @@ export type StickerData = {
   installationDate: string
   location: string
   assignedTo: string
+  customerName: string
   notes: string
   issuedAt: string
   qrUrl: string          // URL that the QR code encodes → /units/[id]
@@ -30,6 +31,7 @@ function Sticker({ s }: { s: StickerData }) {
         <p className="font-mono text-gray-500">{s.sku}</p>
         <div className="border-t border-gray-100 my-1" />
         <Row label="Unit"     value={`${s.unitNumber} / ${s.totalUnits}`} />
+        {s.customerName     && <Row label="Customer" value={s.customerName} />}
         {s.reference        && <Row label="Ref"      value={s.reference} />}
         {s.installationDate && <Row label="Install"  value={s.installationDate} />}
         {s.location         && <Row label="Location" value={s.location} />}

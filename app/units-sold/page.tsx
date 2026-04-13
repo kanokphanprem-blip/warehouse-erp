@@ -22,6 +22,7 @@ export default function UnitsSoldPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | UnitSold['status']>('all')
   const [showAddModal, setShowAddModal] = useState(false)
   const [qrUnit, setQrUnit] = useState<UnitSold | null>(null)   // single QR preview
+  const [editUnit, setEditUnit] = useState<UnitSold | null>(null)
   const [printStickers, setPrintStickers] = useState<StickerData[] | null>(null)
   const [printWarranty, setPrintWarranty] = useState<WarrantyCardData[] | null>(null)
 
@@ -45,6 +46,7 @@ export default function UnitsSoldPage() {
       u.sku.toLowerCase().includes(q) ||
       u.location.toLowerCase().includes(q) ||
       u.assigned_to.toLowerCase().includes(q) ||
+      u.customer_name?.toLowerCase().includes(q) ||
       u.reference.toLowerCase().includes(q)
     const matchStatus = statusFilter === 'all' || u.status === statusFilter
     return matchSearch && matchStatus
@@ -63,6 +65,7 @@ export default function UnitsSoldPage() {
       installationDate: u.installation_date,
       location: u.location,
       assignedTo: u.assigned_to,
+      customerName: u.customer_name,
       notes: u.notes,
       issuedAt: u.created_at,
       qrUrl: `${origin}/units/${u.id}`,
@@ -81,6 +84,7 @@ export default function UnitsSoldPage() {
       issuedAt: u.created_at,
       location: u.location,
       assignedTo: u.assigned_to,
+      customerName: u.customer_name,
       reference: u.reference,
       qrUrl: `${origin}/units/${u.id}`,
     }
@@ -185,6 +189,7 @@ export default function UnitsSoldPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Product</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Unit</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Location</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Customer</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Assigned To</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Install Date</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
@@ -210,6 +215,7 @@ export default function UnitsSoldPage() {
                       {unit.unit_number}/{unit.total_units}
                     </td>
                     <td className="px-4 py-3 text-gray-600 max-w-[160px] truncate">{unit.location || '—'}</td>
+                    <td className="px-4 py-3 text-gray-600">{unit.customer_name || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{unit.assigned_to || '—'}</td>
                     <td className="px-4 py-3 text-gray-600">{unit.installation_date || '—'}</td>
                     <td className="px-4 py-3">
@@ -246,15 +252,26 @@ export default function UnitsSoldPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => deleteUnit(unit.id)}
-                        className="text-gray-400 hover:text-red-500 transition-colors"
-                        title="Delete"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setEditUnit(unit)}
+                          className="text-gray-400 hover:text-blue-600 transition-colors"
+                          title="Edit"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => deleteUnit(unit.id)}
+                          className="text-gray-400 hover:text-red-500 transition-colors"
+                          title="Delete"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -295,6 +312,15 @@ export default function UnitsSoldPage() {
       {/* Print warranty cards */}
       {printWarranty && (
         <WarrantyCards cards={printWarranty} onClose={() => setPrintWarranty(null)} />
+      )}
+
+      {/* Edit unit modal */}
+      {editUnit && (
+        <EditUnitModal
+          unit={editUnit}
+          onClose={() => setEditUnit(null)}
+          onSaved={() => { setEditUnit(null); fetchData() }}
+        />
       )}
     </div>
   )
@@ -362,8 +388,10 @@ function AddUnitModal({
     installation_date: '',
     location: '',
     assigned_to: '',
+    customer_name: '',
     notes: '',
     warranty_months: 12,
+    warranty_preset: '12',
     status: 'active' as UnitSold['status'],
   })
   const [submitting, setSubmitting] = useState(false)
@@ -388,6 +416,7 @@ function AddUnitModal({
       installation_date: form.installation_date,
       location: form.location.trim(),
       assigned_to: form.assigned_to.trim(),
+      customer_name: form.customer_name.trim(),
       notes: form.notes.trim(),
       warranty_months: Number(form.warranty_months),
       status: form.status,
@@ -409,6 +438,7 @@ function AddUnitModal({
       installationDate: u.installation_date,
       location: u.location,
       assignedTo: u.assigned_to,
+      customerName: u.customer_name,
       notes: u.notes,
       issuedAt: u.created_at,
       qrUrl: `${origin}/units/${u.id}`,
@@ -422,6 +452,7 @@ function AddUnitModal({
       warrantyMonths: u.warranty_months ?? 12,
       installationDate: u.installation_date,
       issuedAt: u.created_at,
+      customerName: u.customer_name,
       location: u.location,
       assignedTo: u.assigned_to,
       reference: u.reference,
@@ -516,6 +547,14 @@ function AddUnitModal({
           </div>
 
           <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name</label>
+            <input type="text" value={form.customer_name} placeholder="e.g. Acme Corp / John Smith"
+              onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
             <textarea value={form.notes} rows={2} placeholder="Optional notes..."
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -524,11 +563,30 @@ function AddUnitModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Warranty (months)</label>
-            <input type="number" min={0} value={form.warranty_months}
-              onChange={(e) => setForm({ ...form, warranty_months: Number(e.target.value) })}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <label className="block text-xs font-medium text-gray-600 mb-1">Warranty Period</label>
+            <select
+              value={form.warranty_preset}
+              onChange={(e) => {
+                const v = e.target.value
+                setForm({ ...form, warranty_preset: v, ...(v !== 'custom' ? { warranty_months: Number(v) } : {}) })
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="0">No warranty</option>
+              <option value="3">3 months</option>
+              <option value="6">6 months</option>
+              <option value="12">1 year (12 months)</option>
+              <option value="24">2 years (24 months)</option>
+              <option value="36">3 years (36 months)</option>
+              <option value="custom">Custom…</option>
+            </select>
+            {form.warranty_preset === 'custom' && (
+              <input type="number" min={0} placeholder="Enter months"
+                value={form.warranty_months}
+                onChange={(e) => setForm({ ...form, warranty_months: Number(e.target.value) })}
+                className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            )}
           </div>
 
           <div className="flex gap-3 pt-1">
@@ -541,6 +599,200 @@ function AddUnitModal({
               className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {submitting ? 'Adding...' : 'Add & Generate QR'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// ── Edit Unit Modal ───────────────────────────────────────────────────────────
+
+const WARRANTY_PRESETS = [0, 3, 6, 12, 24, 36]
+
+function EditUnitModal({
+  unit,
+  onClose,
+  onSaved,
+}: {
+  unit: UnitSold
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const initPreset = WARRANTY_PRESETS.includes(unit.warranty_months ?? 12)
+    ? String(unit.warranty_months ?? 12)
+    : 'custom'
+
+  const [form, setForm] = useState({
+    product_name: unit.product_name,
+    sku: unit.sku,
+    reference: unit.reference ?? '',
+    installation_date: unit.installation_date ?? '',
+    location: unit.location ?? '',
+    assigned_to: unit.assigned_to ?? '',
+    customer_name: unit.customer_name ?? '',
+    notes: unit.notes ?? '',
+    warranty_months: unit.warranty_months ?? 12,
+    warranty_preset: initPreset,
+    status: unit.status,
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSubmitting(true)
+    setError('')
+
+    const { error: err } = await supabase.from('units_sold').update({
+      product_name: form.product_name.trim(),
+      sku: form.sku.trim(),
+      reference: form.reference.trim(),
+      installation_date: form.installation_date,
+      location: form.location.trim(),
+      assigned_to: form.assigned_to.trim(),
+      customer_name: form.customer_name.trim(),
+      notes: form.notes.trim(),
+      warranty_months: Number(form.warranty_months),
+      status: form.status,
+    }).eq('id', unit.id)
+
+    if (err) { setError(err.message); setSubmitting(false); return }
+    onSaved()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md my-4">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div>
+            <h2 className="font-semibold text-gray-900">Edit Unit</h2>
+            <p className="text-xs text-gray-400 mt-0.5 font-mono">{unit.serial_no}</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Product Name *</label>
+              <input required type="text" value={form.product_name}
+                onChange={(e) => setForm({ ...form, product_name: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">SKU</label>
+              <input type="text" value={form.sku}
+                onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+              <select value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value as UnitSold['status'] })}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              >
+                <option value="active">Active</option>
+                <option value="maintenance">Maintenance</option>
+                <option value="returned">Returned</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Installation Date</label>
+              <input type="date" value={form.installation_date}
+                onChange={(e) => setForm({ ...form, installation_date: e.target.value })}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name</label>
+            <input type="text" value={form.customer_name} placeholder="e.g. Acme Corp"
+              onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Location / Site</label>
+            <input type="text" value={form.location} placeholder="e.g. Building A"
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Assigned To</label>
+            <input type="text" value={form.assigned_to} placeholder="e.g. John Smith"
+              onChange={(e) => setForm({ ...form, assigned_to: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Reference</label>
+            <input type="text" value={form.reference} placeholder="e.g. ORD-001"
+              onChange={(e) => setForm({ ...form, reference: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+            <textarea value={form.notes} rows={2} placeholder="Optional notes..."
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Warranty Period</label>
+            <select
+              value={form.warranty_preset}
+              onChange={(e) => {
+                const v = e.target.value
+                setForm({ ...form, warranty_preset: v, ...(v !== 'custom' ? { warranty_months: Number(v) } : {}) })
+              }}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="0">No warranty</option>
+              <option value="3">3 months</option>
+              <option value="6">6 months</option>
+              <option value="12">1 year (12 months)</option>
+              <option value="24">2 years (24 months)</option>
+              <option value="36">3 years (36 months)</option>
+              <option value="custom">Custom…</option>
+            </select>
+            {form.warranty_preset === 'custom' && (
+              <input type="number" min={0} placeholder="Enter months"
+                value={form.warranty_months}
+                onChange={(e) => setForm({ ...form, warranty_months: Number(e.target.value) })}
+                className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            )}
+          </div>
+
+          <div className="flex gap-3 pt-1">
+            <button type="button" onClick={onClose}
+              className="flex-1 px-4 py-2 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >Cancel</button>
+            <button type="submit" disabled={submitting}
+              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {submitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

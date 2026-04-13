@@ -9,7 +9,7 @@ const geistSans = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "Warehouse ERP",
+  title: "Ignie ERP",
   description: "Inventory management system",
 };
 

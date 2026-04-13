@@ -65,7 +65,7 @@ export default function Sidebar() {
             </svg>
           </div>
           <div>
-            <p className="font-semibold text-sm leading-tight">Warehouse ERP</p>
+            <p className="font-semibold text-sm leading-tight">Ignie ERP</p>
             <p className="text-xs text-gray-400">Inventory Manager</p>
           </div>
         </div>

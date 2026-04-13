@@ -20,7 +20,7 @@ export type StickerData = {
 
 function Sticker({ s }: { s: StickerData }) {
   return (
-    <div className="sticker border border-dashed border-gray-300 rounded-lg p-3 flex gap-3 items-start bg-white w-[280px]">
+    <div className="sticker border border-dashed border-gray-300 rounded-lg p-3 flex gap-3 items-start bg-white w-full sm:w-[280px]">
       <div className="shrink-0">
         <QRCodeSVG value={s.qrUrl} size={88} level="M" />
       </div>
@@ -59,7 +59,7 @@ export default function QRStickers({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto p-6">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center overflow-y-auto p-2 sm:p-6">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 print:hidden">
@@ -88,7 +88,7 @@ export default function QRStickers({
         </div>
 
         {/* Sticker grid */}
-        <div id="sticker-sheet" className="p-6 flex flex-wrap gap-4 justify-start">
+        <div id="sticker-sheet" className="p-3 sm:p-6 flex flex-wrap gap-3 sm:gap-4 justify-start overflow-x-auto">
           {stickers.map((s) => (
             <Sticker key={s.unitId} s={s} />
           ))}

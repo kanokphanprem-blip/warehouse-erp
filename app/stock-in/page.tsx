@@ -64,13 +64,13 @@ export default function StockInPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-8">
+    <div className="p-4 sm:p-8">
+      <div className="mb-5 sm:mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Stock In</h1>
         <p className="text-gray-500 text-sm mt-1">Record incoming inventory</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8">
         {/* Form */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h2 className="font-semibold text-gray-900 mb-5">New Stock In Entry</h2>

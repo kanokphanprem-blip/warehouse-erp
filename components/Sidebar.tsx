@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -53,48 +54,98 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
+
+  // Close drawer whenever the route changes
+  useEffect(() => { setOpen(false) }, [pathname])
+
+  // Prevent body scroll when drawer is open on mobile
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden'
+    else document.body.style.overflow = ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   return (
-    <aside className="w-60 min-h-screen bg-gray-900 text-white flex flex-col">
-      {/* Logo */}
-      <div className="px-6 py-5 border-b border-gray-700">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+    <>
+      {/* ── Mobile hamburger button ── */}
+      <button
+        onClick={() => setOpen(true)}
+        aria-label="Open menu"
+        className="lg:hidden fixed top-3 left-3 z-40 w-10 h-10 bg-gray-900 text-white rounded-lg flex items-center justify-center shadow-lg"
+      >
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      {/* ── Backdrop (mobile only) ── */}
+      {open && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40 backdrop-blur-sm"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      {/* ── Sidebar panel ── */}
+      <aside
+        className={`
+          fixed lg:static inset-y-0 left-0 z-50
+          w-64 lg:w-60 min-h-screen bg-gray-900 text-white flex flex-col
+          transition-transform duration-200 ease-in-out
+          ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+      >
+        {/* Logo + close button */}
+        <div className="px-6 py-5 border-b border-gray-700 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center shrink-0">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-semibold text-sm leading-tight">Ignie ERP</p>
+              <p className="text-xs text-gray-400">Inventory Manager</p>
+            </div>
+          </div>
+          {/* Close button — mobile only */}
+          <button
+            onClick={() => setOpen(false)}
+            aria-label="Close menu"
+            className="lg:hidden text-gray-400 hover:text-white transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-          </div>
-          <div>
-            <p className="font-semibold text-sm leading-tight">Ignie ERP</p>
-            <p className="text-xs text-gray-400">Inventory Manager</p>
-          </div>
+          </button>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-              }`}
-            >
-              {item.icon}
-              {item.label}
-            </Link>
-          )
-        })}
-      </nav>
+        {/* Navigation */}
+        <nav className="flex-1 px-3 py-4 space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                }`}
+              >
+                {item.icon}
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
 
-      <div className="px-6 py-4 border-t border-gray-700">
-        <p className="text-xs text-gray-500">v1.0.0</p>
-      </div>
-    </aside>
+        <div className="px-6 py-4 border-t border-gray-700">
+          <p className="text-xs text-gray-500">v1.0.0</p>
+        </div>
+      </aside>
+    </>
   )
 }

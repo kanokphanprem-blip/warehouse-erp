@@ -185,6 +185,7 @@ export default function WarrantyCards({
       <style>{`
         @media print {
           @page { size: A5 portrait; margin: 6mm; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
           body * { visibility: hidden !important; }
           #warranty-sheet, #warranty-sheet * { visibility: visible !important; }
           #warranty-sheet {

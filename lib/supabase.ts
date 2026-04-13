@@ -48,6 +48,7 @@ export type UnitSold = {
   location: string
   assigned_to: string
   notes: string
+  warranty_months: number
   status: 'active' | 'returned' | 'maintenance'
   created_at: string
 }

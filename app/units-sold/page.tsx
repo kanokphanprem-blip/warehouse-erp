@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { supabase, Product, UnitSold } from '@/lib/supabase'
 import QRStickers, { StickerData } from '@/components/QRStickers'
+import WarrantyCards, { WarrantyCardData } from '@/components/WarrantyCards'
 
 const STATUS_STYLES: Record<UnitSold['status'], string> = {
   active:      'bg-green-100 text-green-700',
@@ -22,6 +23,7 @@ export default function UnitsSoldPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [qrUnit, setQrUnit] = useState<UnitSold | null>(null)   // single QR preview
   const [printStickers, setPrintStickers] = useState<StickerData[] | null>(null)
+  const [printWarranty, setPrintWarranty] = useState<WarrantyCardData[] | null>(null)
 
   async function fetchData() {
     const [unitsRes, productsRes] = await Promise.all([
@@ -63,6 +65,23 @@ export default function UnitsSoldPage() {
       assignedTo: u.assigned_to,
       notes: u.notes,
       issuedAt: u.created_at,
+      qrUrl: `${origin}/units/${u.id}`,
+    }
+  }
+
+  function toWarrantyCardData(u: UnitSold): WarrantyCardData {
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
+    return {
+      unitId: u.id,
+      serialNo: u.serial_no,
+      productName: u.product_name,
+      sku: u.sku,
+      warrantyMonths: u.warranty_months ?? 12,
+      installationDate: u.installation_date,
+      issuedAt: u.created_at,
+      location: u.location,
+      assignedTo: u.assigned_to,
+      reference: u.reference,
       qrUrl: `${origin}/units/${u.id}`,
     }
   }
@@ -121,15 +140,26 @@ export default function UnitsSoldPage() {
           <option value="returned">Returned</option>
         </select>
         {filtered.length > 0 && (
-          <button
-            onClick={() => setPrintStickers(filtered.map(toStickerData))}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Print All ({filtered.length})
-          </button>
+          <>
+            <button
+              onClick={() => setPrintStickers(filtered.map(toStickerData))}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shrink-0"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Stickers ({filtered.length})
+            </button>
+            <button
+              onClick={() => setPrintWarranty(filtered.map(toWarrantyCardData))}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors shrink-0"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Warranty ({filtered.length})
+            </button>
+          </>
         )}
       </div>
 
@@ -159,6 +189,7 @@ export default function UnitsSoldPage() {
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Install Date</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">Status</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-500">QR</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-500">Warranty</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
@@ -203,6 +234,17 @@ export default function UnitsSoldPage() {
                         </svg>
                       </button>
                     </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setPrintWarranty([toWarrantyCardData(unit)])}
+                        className="text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Print warranty card"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => deleteUnit(unit.id)}
@@ -236,10 +278,11 @@ export default function UnitsSoldPage() {
         <AddUnitModal
           products={products}
           onClose={() => setShowAddModal(false)}
-          onAdded={(stickers) => {
+          onAdded={(stickers, warrantyData) => {
             setShowAddModal(false)
             fetchData()
             setPrintStickers(stickers)
+            setPrintWarranty(warrantyData)
           }}
         />
       )}
@@ -247,6 +290,11 @@ export default function UnitsSoldPage() {
       {/* Print sticker sheet */}
       {printStickers && (
         <QRStickers stickers={printStickers} onClose={() => setPrintStickers(null)} />
+      )}
+
+      {/* Print warranty cards */}
+      {printWarranty && (
+        <WarrantyCards cards={printWarranty} onClose={() => setPrintWarranty(null)} />
       )}
     </div>
   )
@@ -305,7 +353,7 @@ function AddUnitModal({
 }: {
   products: Product[]
   onClose: () => void
-  onAdded: (stickers: StickerData[]) => void
+  onAdded: (stickers: StickerData[], warrantyData: WarrantyCardData[]) => void
 }) {
   const [form, setForm] = useState({
     product_id: '',
@@ -315,6 +363,7 @@ function AddUnitModal({
     location: '',
     assigned_to: '',
     notes: '',
+    warranty_months: 12,
     status: 'active' as UnitSold['status'],
   })
   const [submitting, setSubmitting] = useState(false)
@@ -340,6 +389,7 @@ function AddUnitModal({
       location: form.location.trim(),
       assigned_to: form.assigned_to.trim(),
       notes: form.notes.trim(),
+      warranty_months: Number(form.warranty_months),
       status: form.status,
     }))
 
@@ -364,7 +414,21 @@ function AddUnitModal({
       qrUrl: `${origin}/units/${u.id}`,
     }))
 
-    onAdded(stickers)
+    const warrantyData: WarrantyCardData[] = (insertedUnits as UnitSold[]).map((u) => ({
+      unitId: u.id,
+      serialNo: u.serial_no,
+      productName: u.product_name,
+      sku: u.sku,
+      warrantyMonths: u.warranty_months ?? 12,
+      installationDate: u.installation_date,
+      issuedAt: u.created_at,
+      location: u.location,
+      assignedTo: u.assigned_to,
+      reference: u.reference,
+      qrUrl: `${origin}/units/${u.id}`,
+    }))
+
+    onAdded(stickers, warrantyData)
   }
 
   return (
@@ -456,6 +520,14 @@ function AddUnitModal({
             <textarea value={form.notes} rows={2} placeholder="Optional notes..."
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Warranty (months)</label>
+            <input type="number" min={0} value={form.warranty_months}
+              onChange={(e) => setForm({ ...form, warranty_months: Number(e.target.value) })}
+              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 

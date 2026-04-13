@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { supabase, Product, StockTransaction, UnitSold } from '@/lib/supabase'
 import QRStickers, { StickerData } from '@/components/QRStickers'
+import WarrantyCards, { WarrantyCardData } from '@/components/WarrantyCards'
 
 export default function StockOutPage() {
   const [products, setProducts] = useState<Product[]>([])
@@ -18,10 +19,12 @@ export default function StockOutPage() {
     installation_date: '',
     location: '',
     assigned_to: '',
+    warranty_months: 12,
   })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [stickers, setStickers] = useState<StickerData[] | null>(null)
+  const [warrantyCards, setWarrantyCards] = useState<WarrantyCardData[] | null>(null)
 
   async function fetchData() {
     const [productsRes, txRes] = await Promise.all([
@@ -84,6 +87,7 @@ export default function StockOutPage() {
       location: form.location.trim(),
       assigned_to: form.assigned_to.trim(),
       notes: form.notes.trim(),
+      warranty_months: Number(form.warranty_months),
       status: 'active',
     }))
 
@@ -114,8 +118,23 @@ export default function StockOutPage() {
       qrUrl: `${origin}/units/${u.id}`,
     }))
 
+    const generatedWarranty: WarrantyCardData[] = units.map((u) => ({
+      unitId: u.id,
+      serialNo: u.serial_no,
+      productName: u.product_name,
+      sku: u.sku,
+      warrantyMonths: u.warranty_months ?? 12,
+      installationDate: u.installation_date,
+      issuedAt: u.created_at,
+      location: u.location,
+      assignedTo: u.assigned_to,
+      reference: u.reference,
+      qrUrl: `${origin}/units/${u.id}`,
+    }))
+
     setStickers(generated)
-    setForm({ product_id: '', quantity: 1, reference: '', notes: '', installation_date: '', location: '', assigned_to: '' })
+    setWarrantyCards(generatedWarranty)
+    setForm({ product_id: '', quantity: 1, reference: '', notes: '', installation_date: '', location: '', assigned_to: '', warranty_months: 12 })
     setSelectedProduct(null)
     fetchData()
     setSubmitting(false)
@@ -202,6 +221,13 @@ export default function StockOutPage() {
                   </div>
                 </div>
                 <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Warranty (months)</label>
+                  <input type="number" min={0} value={form.warranty_months}
+                    onChange={(e) => setForm({ ...form, warranty_months: Number(e.target.value) })}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Location / Site</label>
                   <input type="text" value={form.location} placeholder="e.g. Building A, Floor 3, Room 301"
                     onChange={(e) => setForm({ ...form, location: e.target.value })}
@@ -273,6 +299,7 @@ export default function StockOutPage() {
       </div>
 
       {stickers && <QRStickers stickers={stickers} onClose={() => setStickers(null)} />}
+      {warrantyCards && <WarrantyCards cards={warrantyCards} onClose={() => setWarrantyCards(null)} />}
     </div>
   )
 }

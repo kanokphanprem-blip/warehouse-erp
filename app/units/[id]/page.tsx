@@ -53,6 +53,18 @@ export default function UnitDetailPage() {
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const url = `${origin}/units/${unit.id}`
 
+  // Warranty expiry
+  const warrantyMonths = unit.warranty_months ?? 0
+  const warrantyExpiry = (() => {
+    if (!warrantyMonths) return null
+    const base = unit.installation_date
+      ? new Date(unit.installation_date + 'T00:00:00')
+      : new Date(unit.created_at)
+    const exp = new Date(base)
+    exp.setMonth(exp.getMonth() + warrantyMonths)
+    return exp
+  })()
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
       <div className="w-full max-w-sm space-y-4">
@@ -114,6 +126,14 @@ export default function UnitDetailPage() {
               value={unit.notes}
             />
           )}
+          {warrantyExpiry && (
+            <DetailRow
+              icon={<ShieldIcon />}
+              label={`Warranty — ${warrantyMonths} month${warrantyMonths !== 1 ? 's' : ''}`}
+              value={`Expires ${warrantyExpiry.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}`}
+              highlight={warrantyExpiry < new Date() ? 'expired' : 'active'}
+            />
+          )}
           <DetailRow
             icon={<ClockIcon />}
             label="Registered"
@@ -136,15 +156,19 @@ export default function UnitDetailPage() {
   )
 }
 
-function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+function DetailRow({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: 'active' | 'expired' }) {
+  const valueColor =
+    highlight === 'expired' ? 'text-red-600' :
+    highlight === 'active'  ? 'text-green-700' :
+    'text-gray-800'
   return (
     <div className="flex items-start gap-3 px-5 py-4">
-      <div className="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center shrink-0">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${highlight === 'expired' ? 'bg-red-50 text-red-500' : highlight === 'active' ? 'bg-green-50 text-green-600' : 'bg-blue-50 text-blue-500'}`}>
         {icon}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-sm font-medium text-gray-800 mt-0.5 break-words">{value}</p>
+        <p className={`text-sm font-medium mt-0.5 break-words ${valueColor}`}>{value}</p>
       </div>
     </div>
   )
@@ -190,6 +214,13 @@ function ClockIcon() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  )
+}
+function ShieldIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
     </svg>
   )
 }

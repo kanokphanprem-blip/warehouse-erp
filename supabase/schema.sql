@@ -56,6 +56,7 @@ create table if not exists units_sold (
   location          text default '',
   assigned_to       text default '',
   notes             text default '',
+  warranty_months   integer not null default 12,
   status            text check (status in ('active','returned','maintenance')) default 'active',
   created_at        timestamptz default now()
 );

@@ -148,7 +148,9 @@ export default function StockOutPage() {
   }
 
   async function handleDeleteTx(tx: StockTransaction) {
-    if (!confirm('Delete this transaction? Stock will be adjusted accordingly.')) return
+    if (!confirm('Delete this transaction? All linked unit records and stock will be adjusted accordingly.')) return
+    // Delete all linked units_sold first
+    await supabase.from('units_sold').delete().eq('transaction_id', tx.id)
     // Reverse the stock effect (stock-out removed stock, so add it back)
     const { data: prods } = await supabase.from('products').select('*').eq('id', tx.product_id)
     const p = (prods as Product[] | null)?.[0]
@@ -402,7 +404,7 @@ function EditStockOutModal({
     const newQty = Number(form.quantity)
     const diff = newQty - tx.quantity
 
-    // Adjust product stock: stock-out reduces stock, so diff is inverted
+    // 1. Adjust product stock (stock-out reduces stock, so diff is inverted)
     if (diff !== 0) {
       const { data: prods } = await supabase.from('products').select('*').eq('id', tx.product_id)
       const p = (prods as Product[] | null)?.[0]
@@ -411,6 +413,7 @@ function EditStockOutModal({
       }
     }
 
+    // 2. Update the transaction record
     const { error: err } = await supabase.from('stock_transactions').update({
       quantity: newQty,
       reference: form.reference.trim(),
@@ -421,6 +424,52 @@ function EditStockOutModal({
     }).eq('id', tx.id)
 
     if (err) { setError(err.message); setSubmitting(false); return }
+
+    // 3. Sync linked units_sold records
+    // Always update the common fields on all linked units
+    await supabase.from('units_sold').update({
+      reference: form.reference.trim(),
+      installation_date: form.installation_date,
+      location: form.location.trim(),
+      assigned_to: form.assigned_to.trim(),
+    }).eq('transaction_id', tx.id)
+
+    // Handle quantity changes
+    if (diff !== 0) {
+      const { data: existingData } = await supabase.from('units_sold').select('*').eq('transaction_id', tx.id)
+      const existing = (existingData as UnitSold[]) ?? []
+
+      if (diff > 0) {
+        // Add new unit records for the extra quantity
+        const first = existing[0]
+        const newRows = Array.from({ length: diff }, (_, i) => ({
+          product_id: tx.product_id,
+          product_name: first?.product_name ?? (tx.products?.name ?? ''),
+          sku: first?.sku ?? (tx.products?.sku ?? ''),
+          transaction_id: tx.id,
+          unit_number: tx.quantity + i + 1,
+          total_units: newQty,
+          reference: form.reference.trim(),
+          installation_date: form.installation_date,
+          location: form.location.trim(),
+          assigned_to: form.assigned_to.trim(),
+          customer_name: first?.customer_name ?? '',
+          notes: first?.notes ?? '',
+          warranty_months: first?.warranty_months ?? 12,
+          status: 'active',
+        }))
+        await supabase.from('units_sold').insert(newRows)
+        await supabase.from('units_sold').update({ total_units: newQty }).eq('transaction_id', tx.id)
+      } else {
+        // Delete the last |diff| units (highest unit_numbers)
+        const sorted = [...existing].sort((a, b) => b.unit_number - a.unit_number)
+        for (const u of sorted.slice(0, Math.abs(diff))) {
+          await supabase.from('units_sold').delete().eq('id', u.id)
+        }
+        await supabase.from('units_sold').update({ total_units: newQty }).eq('transaction_id', tx.id)
+      }
+    }
+
     onSaved()
   }
 

@@ -28,7 +28,7 @@ export default function ProductsPage() {
 
   async function fetchProducts() {
     const { data } = await supabase.from('products').select('*').order('name')
-    const sorted = (data ?? []).sort((a, b) => {
+    const sorted = (data ?? []).sort((a: Product, b: Product) => {
       const catDiff = categoryRank(a.category) - categoryRank(b.category)
       return catDiff !== 0 ? catDiff : a.name.localeCompare(b.name)
     })

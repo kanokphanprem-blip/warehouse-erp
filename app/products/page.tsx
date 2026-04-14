@@ -12,9 +12,27 @@ export default function ProductsPage() {
   // null = modal closed, undefined = add mode, Product = edit mode
   const [modalProduct, setModalProduct] = useState<Product | null | undefined>(undefined)
 
+  const CATEGORY_ORDER = [
+    'PoolComfort Inverter',
+    'PoolComfort Commercial',
+    'HeatPump All-in-One',
+    'HeatPump Eco',
+    'HeatPump High Temp',
+    'Storage Tank',
+  ]
+
+  function categoryRank(cat: string) {
+    const i = CATEGORY_ORDER.indexOf(cat)
+    return i === -1 ? CATEGORY_ORDER.length : i
+  }
+
   async function fetchProducts() {
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-    setProducts(data ?? [])
+    const { data } = await supabase.from('products').select('*').order('name')
+    const sorted = (data ?? []).sort((a, b) => {
+      const catDiff = categoryRank(a.category) - categoryRank(b.category)
+      return catDiff !== 0 ? catDiff : a.name.localeCompare(b.name)
+    })
+    setProducts(sorted)
     setLoading(false)
   }
 

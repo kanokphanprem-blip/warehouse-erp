@@ -92,12 +92,51 @@ function generateSerialNo(prefix: string, existingCount: number, rowIndex: numbe
 function seed() {
   if (typeof window === 'undefined') return
   if (localStorage.getItem('wh_seeded')) return
+  const now = new Date().toISOString()
   const products: Product[] = [
-    { id: uuid(), name: 'Laptop Dell XPS 15',     sku: 'LPT-001', category: 'Electronics', unit: 'pcs',  current_stock: 25,  min_stock: 5,  created_at: new Date().toISOString() },
-    { id: uuid(), name: 'Office Chair Ergonomic',  sku: 'FRN-001', category: 'Furniture',   unit: 'pcs',  current_stock: 40,  min_stock: 10, created_at: new Date().toISOString() },
-    { id: uuid(), name: 'A4 Paper Ream',            sku: 'STT-001', category: 'Stationery',  unit: 'ream', current_stock: 200, min_stock: 50, created_at: new Date().toISOString() },
-    { id: uuid(), name: 'USB-C Hub 7-in-1',         sku: 'ACC-001', category: 'Accessories', unit: 'pcs',  current_stock: 60,  min_stock: 15, created_at: new Date().toISOString() },
-    { id: uuid(), name: 'Monitor 27" 4K',           sku: 'MON-001', category: 'Electronics', unit: 'pcs',  current_stock: 4,   min_stock: 5,  created_at: new Date().toISOString() },
+    // PoolComfort Inverter
+    { id: uuid(), name: 'PoolComfort PC-010',      sku: 'PC-010',      category: 'PoolComfort Inverter',    unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'PoolComfort PC-020',      sku: 'PC-020',      category: 'PoolComfort Inverter',    unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'PoolComfort PC-030',      sku: 'PC-030',      category: 'PoolComfort Inverter',    unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'PoolComfort PC-045',      sku: 'PC-045',      category: 'PoolComfort Inverter',    unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'PoolComfort PC-060',      sku: 'PC-060',      category: 'PoolComfort Inverter',    unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'PoolComfort PC-080',      sku: 'PC-080',      category: 'PoolComfort Inverter',    unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    // PoolComfort Commercial
+    { id: uuid(), name: 'PoolComfort PC-100-INVT', sku: 'PC-100-INVT', category: 'PoolComfort Commercial',  unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'PoolComfort PC-150-INVT', sku: 'PC-150-INVT', category: 'PoolComfort Commercial',  unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'PoolComfort PC-200-INVT', sku: 'PC-200-INVT', category: 'PoolComfort Commercial',  unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'PoolComfort PC-300-INVT', sku: 'PC-300-INVT', category: 'PoolComfort Commercial',  unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    // HeatPump All-in-One
+    { id: uuid(), name: 'HeatPump All-in-One 200L',    sku: 'AHP-200',     category: 'HeatPump All-in-One',     unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'HeatPump All-in-One 300L',    sku: 'AHP-300',     category: 'HeatPump All-in-One',     unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    // HeatPump Eco (Small)
+    { id: uuid(), name: 'HeatPump Eco 4kW',            sku: 'HP-004',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 6kW',            sku: 'HP-006',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 8kW',            sku: 'HP-008',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 12kW',           sku: 'HP-012',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 18kW',           sku: 'HP-018',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    // HeatPump Eco (Large)
+    { id: uuid(), name: 'HeatPump Eco 13kW',           sku: 'HP-013',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 20kW',           sku: 'HP-020',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 28kW',           sku: 'HP-028',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 35kW',           sku: 'HP-035',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 44kW',           sku: 'HP-044',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 52kW',           sku: 'HP-052',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump Eco 76kW',           sku: 'HP-076',      category: 'HeatPump Eco',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    // HeatPump High Temp
+    { id: uuid(), name: 'HeatPump High Temp 15kW',     sku: 'HPT-015',     category: 'HeatPump High Temp',      unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump High Temp 20kW',     sku: 'HPT-020',     category: 'HeatPump High Temp',      unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump High Temp 27kW',     sku: 'HPT-027',     category: 'HeatPump High Temp',      unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump High Temp 37kW',     sku: 'HPT-037',     category: 'HeatPump High Temp',      unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump High Temp 56kW',     sku: 'HPT-056',     category: 'HeatPump High Temp',      unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump High Temp 64kW',     sku: 'HPT-064',     category: 'HeatPump High Temp',      unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'HeatPump High Temp 72kW',     sku: 'HPT-072',     category: 'HeatPump High Temp',      unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    // Storage Tank
+    { id: uuid(), name: 'Storage Tank 150L',           sku: 'AH-150',      category: 'Storage Tank',            unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'Storage Tank 300L',           sku: 'AH-300',      category: 'Storage Tank',            unit: 'unit', current_stock: 0, min_stock: 2, created_at: now },
+    { id: uuid(), name: 'Storage Tank 500L',           sku: 'AH-500',      category: 'Storage Tank',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'Storage Tank 600L',           sku: 'AH-600',      category: 'Storage Tank',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
+    { id: uuid(), name: 'Storage Tank 1000L',          sku: 'AH-1000',     category: 'Storage Tank',            unit: 'unit', current_stock: 0, min_stock: 1, created_at: now },
   ]
   save(KEYS.products, products)
   save(KEYS.transactions, [])

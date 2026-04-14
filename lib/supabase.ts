@@ -54,18 +54,47 @@ export type UnitSold = {
   created_at: string
 }
 
+export type CrmContact = {
+  id: string
+  name: string
+  company: string
+  phone: string
+  email: string
+  address: string
+  notes: string
+  created_at: string
+}
+
+export type CrmProject = {
+  id: string
+  title: string
+  contact_id: string
+  status: 'lead' | 'quoted' | 'won' | 'in_progress' | 'completed' | 'lost'
+  product_lines: string   // comma-separated product line names
+  value: number
+  location: string
+  assigned_to: string
+  notes: string
+  created_at: string
+  crm_contacts?: Pick<CrmContact, 'name' | 'company' | 'phone'>
+}
+
 // ── localStorage mock ─────────────────────────────────────────────────────────
 
 const KEYS = {
   products: 'wh_products',
   transactions: 'wh_transactions',
   units: 'wh_units',
+  crm_contacts: 'wh_crm_contacts',
+  crm_projects: 'wh_crm_projects',
 }
 
 function tableKey(name: string): string {
   if (name === 'products') return KEYS.products
   if (name === 'stock_transactions') return KEYS.transactions
   if (name === 'units_sold') return KEYS.units
+  if (name === 'crm_contacts') return KEYS.crm_contacts
+  if (name === 'crm_projects') return KEYS.crm_projects
   return name
 }
 
@@ -198,6 +227,14 @@ class QueryBuilder {
       rows = rows.map((tx) => {
         const p = products.find((pr) => pr.id === tx.product_id)
         return p ? { ...tx, products: { name: p.name, sku: p.sku } } : tx
+      })
+    }
+
+    if (this.tableName === 'crm_projects' && this._select.includes('crm_contacts(')) {
+      const contacts = load<CrmContact>(KEYS.crm_contacts)
+      rows = rows.map((proj) => {
+        const c = contacts.find((ct) => ct.id === proj.contact_id)
+        return c ? { ...proj, crm_contacts: { name: c.name, company: c.company, phone: c.phone } } : proj
       })
     }
 

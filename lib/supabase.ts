@@ -79,6 +79,16 @@ export type CrmProject = {
   crm_contacts?: Pick<CrmContact, 'name' | 'company' | 'phone'>
 }
 
+export type CrmActivity = {
+  id: string
+  project_id: string
+  type: 'note' | 'follow_up' | 'call' | 'email' | 'meeting' | 'visit'
+  description: string
+  due_date: string      // ISO date (YYYY-MM-DD), empty string = no due date
+  completed: boolean
+  created_at: string
+}
+
 // ── localStorage mock ─────────────────────────────────────────────────────────
 
 const KEYS = {
@@ -87,6 +97,7 @@ const KEYS = {
   units: 'wh_units',
   crm_contacts: 'wh_crm_contacts',
   crm_projects: 'wh_crm_projects',
+  crm_activities: 'wh_crm_activities',
 }
 
 function tableKey(name: string): string {
@@ -95,6 +106,7 @@ function tableKey(name: string): string {
   if (name === 'units_sold') return KEYS.units
   if (name === 'crm_contacts') return KEYS.crm_contacts
   if (name === 'crm_projects') return KEYS.crm_projects
+  if (name === 'crm_activities') return KEYS.crm_activities
   return name
 }
 

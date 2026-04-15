@@ -433,9 +433,11 @@ function ProjectActivitiesModal({
     type: ActivityType; description: string; due_date: string
   }>({ type: 'follow_up', description: '', due_date: '' })
   const [submitting, setSubmitting] = useState(false)
+  const [activeTab, setActiveTab] = useState<'tasks' | 'history'>('tasks')
 
   const pending   = activities.filter(a => !a.completed)
   const completed = activities.filter(a => a.completed)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
@@ -454,6 +456,16 @@ function ProjectActivitiesModal({
   }
 
   const statusMeta_ = statusMeta(project.status)
+
+  // Group completed activities by month for history timeline
+  const historyByMonth: { label: string; items: CrmActivity[] }[] = []
+  completed.forEach(a => {
+    const d = new Date(a.created_at)
+    const label = d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+    const last = historyByMonth[historyByMonth.length - 1]
+    if (last && last.label === label) last.items.push(a)
+    else historyByMonth.push({ label, items: [a] })
+  })
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
@@ -486,68 +498,143 @@ function ProjectActivitiesModal({
           </button>
         </div>
 
-        {/* Add activity form */}
-        <form onSubmit={handleAdd} className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
-          <p className="text-xs font-medium text-gray-600 mb-2">Add Update</p>
-          <div className="flex gap-2 mb-2">
-            {ACTIVITY_TYPES.map(t => (
-              <button key={t.key} type="button"
-                onClick={() => setForm(f => ({ ...f, type: t.key }))}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${
-                  form.type === t.key
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                }`}>
-                <span>{t.icon}</span>
-                <span className="hidden sm:inline">{t.label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-              placeholder={`Add ${activityMeta(form.type).label.toLowerCase()} note...`}
-              className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            />
-            <input
-              type="date"
-              value={form.due_date}
-              onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-              min={today()}
-              className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-36"
-            />
-            <button type="submit" disabled={submitting || !form.description.trim()}
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shrink-0">
-              Add
-            </button>
-          </div>
-        </form>
-
-        {/* Activities list */}
-        <div className="overflow-y-auto flex-1 px-6 py-4 space-y-4">
-          {activities.length === 0 && (
-            <p className="text-sm text-gray-400 text-center py-8">No updates yet</p>
-          )}
-
-          {/* Pending */}
-          {pending.length > 0 && (
-            <div className="space-y-2">
-              {pending.map(a => <ActivityRow key={a.id} activity={a} onToggle={onToggle} onDelete={onDelete} />)}
-            </div>
-          )}
-
-          {/* Completed */}
-          {completed.length > 0 && (
-            <div>
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">Completed</p>
-              <div className="space-y-2 opacity-60">
-                {completed.map(a => <ActivityRow key={a.id} activity={a} onToggle={onToggle} onDelete={onDelete} />)}
-              </div>
-            </div>
-          )}
+        {/* Tabs */}
+        <div className="flex border-b border-gray-100">
+          <button
+            onClick={() => setActiveTab('tasks')}
+            className={`flex-1 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === 'tasks' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}>
+            Tasks {pending.length > 0 && <span className="ml-1 text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">{pending.length}</span>}
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex-1 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              activeTab === 'history' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}>
+            History {completed.length > 0 && <span className="ml-1 text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">{completed.length}</span>}
+          </button>
         </div>
+
+        {activeTab === 'tasks' ? (
+          <>
+            {/* Add activity form */}
+            <form onSubmit={handleAdd} className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <p className="text-xs font-medium text-gray-600 mb-2">Add Update</p>
+              <div className="flex gap-2 mb-2 flex-wrap">
+                {ACTIVITY_TYPES.map(t => (
+                  <button key={t.key} type="button"
+                    onClick={() => setForm(f => ({ ...f, type: t.key }))}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-colors ${
+                      form.type === t.key
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}>
+                    <span>{t.icon}</span>
+                    <span className="hidden sm:inline">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={form.description}
+                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                  placeholder={`Add ${activityMeta(form.type).label.toLowerCase()} note...`}
+                  className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                />
+                <input
+                  type="date"
+                  value={form.due_date}
+                  onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
+                  min={today()}
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-36"
+                />
+                <button type="submit" disabled={submitting || !form.description.trim()}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors shrink-0">
+                  Add
+                </button>
+              </div>
+            </form>
+
+            {/* Pending tasks list */}
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              {pending.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-8">No pending tasks — all done!</p>
+              ) : (
+                <div className="space-y-2">
+                  {pending.map(a => <ActivityRow key={a.id} activity={a} onToggle={onToggle} onDelete={onDelete} />)}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          /* History timeline */
+          <div className="overflow-y-auto flex-1 px-6 py-5">
+            {completed.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-8">No completed activities yet</p>
+            ) : (
+              <div className="space-y-6">
+                {historyByMonth.map(({ label, items }) => (
+                  <div key={label}>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">{label}</p>
+                    <div className="relative">
+                      {/* Vertical timeline line */}
+                      <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-100" />
+                      <div className="space-y-4">
+                        {items.map(a => {
+                          const meta = activityMeta(a.type)
+                          return (
+                            <div key={a.id} className="flex gap-4 group relative">
+                              {/* Timeline dot */}
+                              <div className="w-8 h-8 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center shrink-0 z-10">
+                                <span className="text-xs">{meta.icon}</span>
+                              </div>
+                              {/* Content */}
+                              <div className="flex-1 min-w-0 pt-1 pb-1">
+                                <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                                  <span className="text-xs font-medium text-gray-500">{meta.label}</span>
+                                  <span className="text-xs text-gray-300">·</span>
+                                  <span className="text-xs text-gray-400">
+                                    {new Date(a.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })}
+                                  </span>
+                                  {a.due_date && (
+                                    <>
+                                      <span className="text-xs text-gray-300">·</span>
+                                      <span className="text-xs text-gray-400">
+                                        due {new Date(a.due_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                                <p className="text-sm text-gray-700">{a.description}</p>
+                              </div>
+                              {/* Undo complete + delete */}
+                              <div className="flex items-start gap-1.5 pt-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                <button onClick={() => onToggle(a)} title="Mark incomplete"
+                                  className="w-5 h-5 rounded-full bg-emerald-500 border-emerald-500 border-2 flex items-center justify-center text-white hover:bg-emerald-600 transition-colors">
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </button>
+                                <button onClick={() => onDelete(a.id)}
+                                  className="text-gray-300 hover:text-red-400 transition-colors">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

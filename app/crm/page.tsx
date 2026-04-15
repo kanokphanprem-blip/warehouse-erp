@@ -547,7 +547,6 @@ function ProjectActivitiesModal({
                   type="date"
                   value={form.due_date}
                   onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))}
-                  min={today()}
                   className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white w-36"
                 />
                 <button type="submit" disabled={submitting || !form.description.trim()}
